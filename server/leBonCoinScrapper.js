@@ -105,40 +105,41 @@ class LeBonCoinScrapper {
      */
     static async toModel(page) {
 
-        // const button = await page.$("[data-qa-id=adview_button_phone_contact]");
-        // await button.click();
-        //
-        // const phone = page.evaluate(el => {
-        //     const href = el.getAttribute('href');
-        //     return href.split(':')[1]
-        // }, button);
-        //
-        // const criteria = await page.$eval('[data-qa-id=criteria_container]', el => {
-        //     return Array.from(el.childNodes).map(div => {
-        //         const id = div.getAttribute("data-qa-id");
-        //         const name = div.childNodes[0].children[0].innerHTML;
-        //         const value = div.childNodes[0].children[1].innerHTML;
-        //         return {id, name, value}
-        //     })
-        // });
-        //
-        // const images = await page.$$eval('._2x8BQ img', els => {
-        //     return els.map(el => el.getAttribute('src'))
-        // });
+        let phone = null;
+        const button = await page.$("[data-qa-id=adview_contact_container] button[data-qa-id=adview_button_phone_contact]");
+        if (button) {
+            await button.click();
+            await page.waitForSelector('a._2sNbI', {visible: true});
+            phone = await page.$eval('a._2sNbI', el => el.textContent);
+        }
 
+        const criteria = await page.$$eval('[data-qa-id=criteria_container]>div', els =>
+            els.map(div => {
+                const id = div.getAttribute("data-qa-id");
+                const name = div.childNodes[0].children[0].innerHTML;
+                const value = div.childNodes[0].children[1].innerHTML;
+                return {id, name, value}
+            }));
+
+        const nextButton = await page.$('[data-qa-id=slideshow_control_next]');
+        if (nextButton) {
+            await nextButton.click()
+        }
+
+        const images = await page.$$eval('._2x8BQ img', els => els.map(el => el.getAttribute('src')));
         const seller = await page.$eval('._2rGU1', el => el.textContent);
         const date = await page.$eval('[data-qa-id=adview_date]', el => el.textContent);
         const price = await page.$eval('[data-qa-id=adview_price] div span', el => el.textContent);
         const title = await page.$eval('[data-qa-id=adview_title] h1', el => el.textContent);
 
         return new Model({
-            // images: images,
+            images: images,
             title: title,
             price: price,
             date: date,
-            // criteria: criteria,
-            seller: seller
-            // phone: phone
+            criteria: criteria,
+            seller: seller,
+            phone: phone
 
         })
     }
