@@ -1,4 +1,6 @@
 const {Model} = require('./model');
+const PromisePool = require('es6-promise-pool');
+
 const baseUrl = "https://www.leboncoin.fr/recherche/";
 
 const pageSize = 35;
@@ -25,7 +27,7 @@ class LeBonCoinScrapper {
         const query = `category=2&text=tesla&search_in=subject&page=${this._currentPage}`;
         const url = `${baseUrl}?${query}`;
         if (this._firstLoad) {
-            this._page = await this._browser.newPage();
+            this._page = (await this._browser.pages())[0];
             await this._page.setViewport({width: 1366, height: 768});
         }
 
@@ -40,50 +42,64 @@ class LeBonCoinScrapper {
     }
 
 
-    async nextPage() {
-        if (this._currentPage >= this.numberOfPages) return false;
-        this._currentPage = (this._currentPage + 1) % (this.numberOfPages + 1);
-        await this.load(this._currentPage);
-        return true;
-    }
+    async scrap(numberOfPages = this.numberOfPages, size = pageSize) {
 
-
-    async scrap() {
-
+        let lastPageIndex = this._currentPage + numberOfPages;
+        lastPageIndex = lastPageIndex > this.numberOfPages ? numberOfPages : lastPageIndex;
 
         let listItems = [];
-        for (let i = this._currentPage; i <= this.numberOfPages; i++) {
+        while (this._currentPage <= lastPageIndex) {
             if (this._firstLoad)
                 await this.load();
 
-            const array = await this._page.evaluate(() => Array.from(document.querySelectorAll('a.clearfix.trackable')).map(el => ({
-                title: el.title,
-                href: el.href
-            })));
-            listItems = listItems.concat(array);
+            const promises = (await this._page.$$('a.clearfix.trackable')).splice(0, size).map(el => {
 
-            this._currentPage += 1000;
-            await this.nextPage()
-        }
-
-        const promises = [];
-        for (const listItem of listItems.slice(0, 10)) {
-            const p = new Promise(async (resolve) => {
-                try {
-                    const page = await this._browser.newPage();
-                    await page.goto(listItem.href, {waitUntil: 'networkidle2'});
-                    const model = await LeBonCoinScrapper.toModel(page);
-                    page.close();
-                    resolve(model)
-                } catch (e) {
-                    resolve({error: e})
-                }
+                return new Promise(async resolve => {
+                    return resolve({
+                        title: await (await el.getProperty('title')).jsonValue(),
+                        href: await (await el.getProperty('href')).jsonValue()
+                    });
+                });
             });
-            promises.push(p)
+
+            listItems = listItems.concat(await Promise.all(promises));
+
+            this._currentPage++;
+            if (this._currentPage < lastPageIndex)
+                await this.load(this._currentPage);
         }
 
+        const pageMap = {};
+        const generatePromises = function* (browser) {
+            for (const {title, href} of listItems)
+                yield new Promise(async resolve => {
+                    console.log(`opening: ${title}`);
+                    const page = await browser.newPage();
+                    pageMap[href] = page;
+                    await page.setViewport({width: 1366, height: 768});
+                    await page.goto(href, {waitUntil: 'networkidle2'});
+                    resolve()
+                });
+        };
 
-        return await Promise.all(promises);
+        const concurrency = 8;
+        const pool = new PromisePool(generatePromises(this._browser), concurrency);
+        await pool.start();
+
+        const rep = [];
+        for (const {href} of listItems.reverse()) {
+            const page = pageMap[href];
+            try {
+                const model = await LeBonCoinScrapper.toModel(page);
+                rep.push(model)
+            } catch (e) {
+                rep.push({error: e})
+            } finally {
+                if (!page.isClosed())
+                    page.close()
+            }
+        }
+        return rep
     }
 
     /**
@@ -103,46 +119,128 @@ class LeBonCoinScrapper {
      * @param {Page} page
      * @return {Promise<Model>}
      */
-    static async toModel(page) {
+    static
+    async toModel(page) {
 
-        let phone = null;
-        const button = await page.$("[data-qa-id=adview_contact_container] button[data-qa-id=adview_button_phone_contact]");
-        if (button) {
-            await button.click();
-            await page.waitForSelector('a._2sNbI', {visible: true});
-            phone = await page.$eval('a._2sNbI', el => el.textContent);
-        }
+        const phone_promise = new Promise(async resolve => {
+            try {
+                const button = await page.$("[data-qa-id=adview_contact_container] button[data-qa-id=adview_button_phone_contact]");
+                if (button) {
+                    await button.click();
+                    await page.waitForSelector('a._2sNbI', {visible: true});
+                    const val = await page.$eval('a._2sNbI', el => el.textContent);
+                    console.log('phone:', val);
+                    resolve(val)
 
-        const criteria = await page.$$eval('[data-qa-id=criteria_container]>div', els =>
-            els.map(div => {
-                const id = div.getAttribute("data-qa-id");
-                const name = div.childNodes[0].children[0].innerHTML;
-                const value = div.childNodes[0].children[1].innerHTML;
-                return {id, name, value}
-            }));
+                } else {
+                    console.log("No phone");
+                    resolve(null)
 
-        const nextButton = await page.$('[data-qa-id=slideshow_control_next]');
-        if (nextButton) {
-            await nextButton.click()
-        }
+                }
+            } catch (e) {
+                console.error("phone error", e);
+                resolve(null)
+            }
+        });
 
-        const images = await page.$$eval('._2x8BQ img', els => els.map(el => el.getAttribute('src')));
-        const seller = await page.$eval('._2rGU1', el => el.textContent);
-        const date = await page.$eval('[data-qa-id=adview_date]', el => el.textContent);
-        const price = await page.$eval('[data-qa-id=adview_price] div span', el => el.textContent);
-        const title = await page.$eval('[data-qa-id=adview_title] h1', el => el.textContent);
+        const criteria_promise = new Promise(async resolve => {
+            try {
+                const criteria = await page.$$eval('[data-qa-id=criteria_container]>div', els =>
+                    els.map(div => {
+                        const id = div.getAttribute("data-qa-id");
+                        const name = div.childNodes[0].children[0].innerHTML;
+                        const value = div.childNodes[0].children[1].innerHTML;
+                        return {id, name, value}
+                    }));
+                console.log('criteria:', criteria);
+                resolve(criteria)
+            } catch (e) {
+                console.error("criteria error", e);
+                resolve(null)
+            }
+        });
+
+        const images_promise = new Promise(async resolve => {
+            try {
+                const nextButton = await page.$('[data-qa-id=slideshow_control_next]');
+                if (nextButton) {
+                    await nextButton.click()
+                }
+                const val = await page.$$eval('._2x8BQ img', els => els.map(el => el.getAttribute('src')));
+                console.log('image:', val);
+                resolve(val)
+            } catch (e) {
+                console.error("image error", e);
+                resolve(null)
+            }
+        });
+
+        const seller_promise = new Promise(async resolve => {
+
+            try {
+                let name = (await page.$('._2rGU1')) || (await page.$('._2j7r2'));
+                const seller = await page.evaluate(el => el.textContent, name);
+                console.log('seller:', seller);
+                resolve(seller)
+            } catch (e) {
+                console.error("seller error", e);
+                resolve(null)
+            }
+        });
+
+        const date_promise = new Promise(async (resolve) => {
+            try {
+                const date = await page.$eval('[data-qa-id=adview_date]', el => el.textContent);
+                resolve(date);
+                console.log('date:', date);
+            } catch (e) {
+                console.error("date error", e);
+                resolve(null)
+            }
+        });
+
+        const price_promise = new Promise(async (resolve) => {
+            try {
+                const price = await page.$eval('[data-qa-id=adview_price] div span', el => el.textContent);
+                resolve(price);
+                console.log('price:', price);
+            } catch (e) {
+                console.error("price error", e);
+                resolve(null)
+            }
+        });
+
+        const title_promise = new Promise(async (resolve) => {
+            try {
+                const title = await page.$eval('[data-qa-id=adview_title] h1', el => el.textContent);
+                resolve(title);
+                console.log('title:', title);
+            } catch (e) {
+                console.error("title error", e);
+                resolve(null)
+            }
+        });
+
+        const fields = await Promise.all([
+            images_promise,
+            title_promise,
+            price_promise,
+            date_promise,
+            criteria_promise,
+            seller_promise,
+            phone_promise]);
 
         return new Model({
-            images: images,
-            title: title,
-            price: price,
-            date: date,
-            criteria: criteria,
-            seller: seller,
-            phone: phone
-
+            images: fields[0],
+            title: fields[1],
+            price: fields[2],
+            date: fields[3],
+            criteria: fields[4],
+            seller: fields[5],
+            phone: fields[6]
         })
     }
 }
 
-exports.LeBonCoinScrapper = LeBonCoinScrapper;
+exports
+    .LeBonCoinScrapper = LeBonCoinScrapper;
