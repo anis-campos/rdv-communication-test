@@ -7,7 +7,6 @@ import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
 import IconButton from "@material-ui/core/IconButton";
-import MenuIcon from '@material-ui/icons/Menu';
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
 import List from "@material-ui/core/List";
@@ -15,6 +14,8 @@ import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
 import Divider from "@material-ui/core/Divider";
 import Icon from "@material-ui/core/Icon";
+import {AnnonceDetail} from "./AnnonceDetail";
+import {Route} from 'react-router-dom';
 
 
 const styles = theme => ({
@@ -105,6 +106,11 @@ class App extends Component {
         }
     };
 
+    onClickItem = (item) => {
+        this.props.history.push('/' + item._id);
+        this.setState({current: item._id})
+    };
+
     render = () => {
         const {refresh, list} = this.state;
         const {classes} = this.props;
@@ -147,22 +153,25 @@ class App extends Component {
 
                                         list.map((item, index) =>
                                             (
-                                                <>
-                                                    <ListItem button>
+                                                <div key={item._id}>
+                                                    <ListItem button onClick={this.onClickItem.bind(this, item)}
+                                                              >
                                                         <img className={classes.image} src={item.images[0]}
-                                                             alt={item.title}/>
-                                                        <ListItemText primary={item.title} secondary={item.date}/>
+                                                             alt={item.title}  />
+                                                        <ListItemText primary={item.title} secondary={item.date} />
 
                                                     </ListItem>
 
-                                                    {index < list.length - 1 && < Divider/>}
-                                                </>))
+                                                    {index < list.length - 1 && < Divider />}
+                                                </div>))
                                     }
                                 </List>
                             </Paper>
                         </Grid>
                         <Grid item xs={8}>
-                            <Paper className={classes.detail}>xs=6</Paper>
+                            <Paper className={classes.detail}>
+                                <Route path="/:id" exact component={AnnonceDetail}/>
+                            </Paper>
                         </Grid>
                     </Grid>
 
