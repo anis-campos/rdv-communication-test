@@ -14,6 +14,7 @@ import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
 import Divider from "@material-ui/core/Divider";
+import Icon from "@material-ui/core/Icon";
 
 
 const styles = theme => ({
@@ -30,19 +31,35 @@ const styles = theme => ({
         marginLeft: -12,
         marginRight: 20,
     },
-    paper: {
-        'min-height': '90vh'
-    }
+    grid: {
+        marginTop: '1vh',
+        padding: '0 20px 0 20px'
+    },
+    list: {
+        maxHeight: '80vh',
+        minHeight: '40vh',
+        overflow: 'auto',
+    },
+    detail: {
+        height: '80vh',
+        overflow: 'auto',
+    },
+    image: {
+        height: '10vh'
+    },
+    title: {paddingTop: 6}
 });
 
 class App extends Component {
     state = {
         data: null,
-        refresh: false
+        refresh: false,
+        list: []
     };
 
     componentDidMount() {
         Notification.requestPermission()
+        this.loadData()
     }
 
 
@@ -51,7 +68,7 @@ class App extends Component {
         this.setState({refresh: true});
 
         new Notification("Starting Scrapping");
-        const response = await fetch("/", {
+        const response = await fetch("/api/annonces", {
             method: "POST"
         });
 
@@ -68,10 +85,26 @@ class App extends Component {
         } else {
             throw Error("No Answers")
         }
+        this.setState({refresh: false});
+
+    };
+
+    loadData = async () => {
+        const response = await fetch("/api/annonces");
+        if (response) {
+
+            const body = await response.json();
+
+            if (response.status !== 200) {
+                throw Error(body.message)
+            }
+
+            this.setState({list: body})
+        }
     };
 
     render = () => {
-        const {refresh} = this.state;
+        const {refresh, list} = this.state;
         const {classes} = this.props;
         return (
             <div className="root">
@@ -95,22 +128,39 @@ class App extends Component {
                     </Toolbar>
                 </AppBar>
 
-                <Grid container spacing={8}>
-                    <Grid item xs={6}>
-                        <Paper className={classes.paper}>
+                <Grid className={classes.grid} container spacing={8}>
+                    <Grid item xs={4} style={{display: 'flex'}}>
+                        <Typography variant="h6" className={classes.title}>Annonces</Typography>
+                        <IconButton style={{marginLeft: 10}} onClick={this.loadData}><Icon>refresh</Icon></IconButton>
+                    </Grid>
+                    <Grid item xs={8}>
+                        <Typography variant="h6" className={classes.title}>
+                            Details
+                        </Typography>
+                    </Grid>
+                    <Grid item xs={4}>
+                        <Paper className={classes.list}>
                             <List component="nav">
-                                <ListItem button>
-                                    <ListItemText primary="Inbox"/>
-                                </ListItem>
-                                <Divider />
-                                <ListItem button>
-                                    <ListItemText primary="Drafts"/>
-                                </ListItem>
+                                {
+
+                                    list.map((item, index) =>
+                                        (
+                                            <>
+                                                <ListItem button>
+                                                    <img className={classes.image} src={item.images[0]}
+                                                         alt={item.title}/>
+                                                    <ListItemText primary={item.title} secondary={item.date}/>
+
+                                                </ListItem>
+
+                                                {index < list.length - 1 && < Divider/>}
+                                            </>))
+                                }
                             </List>
                         </Paper>
                     </Grid>
-                    <Grid item xs={6}>
-                        <Paper className={classes.paper}>xs=6</Paper>
+                    <Grid item xs={8}>
+                        <Paper className={classes.detail}>xs=6</Paper>
                     </Grid>
                 </Grid>
 
