@@ -18,37 +18,39 @@ import Icon from "@material-ui/core/Icon";
 
 
 const styles = theme => ({
-    progress: {
-        color: "white"
-    },
-    root: {
-        flexGrow: 1,
-    },
-    grow: {
-        flexGrow: 1,
-    },
-    menuButton: {
-        marginLeft: -12,
-        marginRight: 20,
-    },
-    grid: {
-        marginTop: '1vh',
-        padding: '0 20px 0 20px'
-    },
-    list: {
-        maxHeight: '80vh',
-        minHeight: '40vh',
-        overflow: 'auto',
-    },
-    detail: {
-        height: '80vh',
-        overflow: 'auto',
-    },
-    image: {
-        height: '10vh'
-    },
-    title: {paddingTop: 6}
-});
+        progress: {
+            color: "white"
+        },
+        root: {
+            flexGrow: 1,
+        },
+        grow: {
+            flexGrow: 1,
+        },
+
+        content: {
+            overflowX: 'hidden'
+        },
+        grid: {
+            marginTop: '1vh',
+            padding: '0 20px 0 20px'
+        },
+        list: {
+            marginRight: 15,
+            maxHeight: '80vh',
+            minHeight: '40vh',
+            overflow: 'auto',
+        },
+        detail: {
+            height: '80vh',
+            overflow: 'auto',
+        },
+        image: {
+            height: '10vh'
+        },
+        title: {paddingTop: 6}
+    })
+;
 
 class App extends Component {
     state = {
@@ -110,9 +112,7 @@ class App extends Component {
             <div className="root">
                 <AppBar position="static">
                     <Toolbar>
-                        <IconButton className={classes.menuButton} color="inherit" aria-label="Menu">
-                            <MenuIcon/>
-                        </IconButton>
+
                         <Typography variant="h4" color="inherit" className={classes.grow}>
                             Le Bon Coin Scrapper
                         </Typography>
@@ -128,42 +128,45 @@ class App extends Component {
                     </Toolbar>
                 </AppBar>
 
-                <Grid className={classes.grid} container spacing={8}>
-                    <Grid item xs={4} style={{display: 'flex'}}>
-                        <Typography variant="h6" className={classes.title}>Annonces</Typography>
-                        <IconButton style={{marginLeft: 10}} onClick={this.loadData}><Icon>refresh</Icon></IconButton>
-                    </Grid>
-                    <Grid item xs={8}>
-                        <Typography variant="h6" className={classes.title}>
-                            Details
-                        </Typography>
-                    </Grid>
-                    <Grid item xs={4}>
-                        <Paper className={classes.list}>
-                            <List component="nav">
-                                {
+                <div className={classes.content}>
+                    <Grid className={classes.grid} container spacing={0}>
+                        <Grid item xs={4} style={{display: 'flex'}}>
+                            <Typography variant="h6" className={classes.title}>Annonces</Typography>
+                            <IconButton style={{marginLeft: 10}}
+                                        onClick={this.loadData}><Icon>refresh</Icon></IconButton>
+                        </Grid>
+                        <Grid item xs={8}>
+                            <Typography variant="h6" className={classes.title}>
+                                Details
+                            </Typography>
+                        </Grid>
+                        <Grid item xs={4}>
+                            <Paper className={classes.list}>
+                                <List component="nav">
+                                    {
 
-                                    list.map((item, index) =>
-                                        (
-                                            <>
-                                                <ListItem button>
-                                                    <img className={classes.image} src={item.images[0]}
-                                                         alt={item.title}/>
-                                                    <ListItemText primary={item.title} secondary={item.date}/>
+                                        list.map((item, index) =>
+                                            (
+                                                <>
+                                                    <ListItem button>
+                                                        <img className={classes.image} src={item.images[0]}
+                                                             alt={item.title}/>
+                                                        <ListItemText primary={item.title} secondary={item.date}/>
 
-                                                </ListItem>
+                                                    </ListItem>
 
-                                                {index < list.length - 1 && < Divider/>}
-                                            </>))
-                                }
-                            </List>
-                        </Paper>
+                                                    {index < list.length - 1 && < Divider/>}
+                                                </>))
+                                    }
+                                </List>
+                            </Paper>
+                        </Grid>
+                        <Grid item xs={8}>
+                            <Paper className={classes.detail}>xs=6</Paper>
+                        </Grid>
                     </Grid>
-                    <Grid item xs={8}>
-                        <Paper className={classes.detail}>xs=6</Paper>
-                    </Grid>
-                </Grid>
 
+                </div>
             </div>
         );
     };
