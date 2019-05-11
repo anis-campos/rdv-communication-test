@@ -1,9 +1,20 @@
-const {Model} = require('./model');
+const {models} = require('./models');
 const PromisePool = require('es6-promise-pool');
 
 const baseUrl = "https://www.leboncoin.fr/recherche/";
 
 const pageSize = 35;
+
+
+function chunk(array, size) {
+    const chunked_arr = [];
+    let index = 0;
+    while (index < array.length) {
+        chunked_arr.push(array.slice(index, size + index));
+        index += size;
+    }
+    return chunked_arr;
+}
 
 class LeBonCoinScrapper {
 
@@ -70,7 +81,11 @@ class LeBonCoinScrapper {
         }
 
         const pageMap = {};
-        const generatePromises = function* (browser) {
+        const rep = [];
+        const concurrency = 8;
+
+
+        const generatePromises = function* (browser, listItems) {
             for (const {title, href} of listItems)
                 yield new Promise(async resolve => {
                     console.log(`opening: ${title}`);
@@ -82,21 +97,24 @@ class LeBonCoinScrapper {
                 });
         };
 
-        const concurrency = 8;
-        const pool = new PromisePool(generatePromises(this._browser), concurrency);
-        await pool.start();
 
-        const rep = [];
-        for (const {href} of listItems.reverse()) {
-            const page = pageMap[href];
-            try {
-                const model = await LeBonCoinScrapper.toModel(page);
-                rep.push(model)
-            } catch (e) {
-                rep.push({error: e})
-            } finally {
-                if (!page.isClosed())
-                    page.close()
+        const chunks = chunk(listItems, concurrency);
+
+        for (const chunk of chunks) {
+            const pool = new PromisePool(generatePromises(this._browser, chunk), concurrency);
+            await pool.start();
+
+            for (const {href} of chunk.reverse()) {
+                const page = pageMap[href];
+                try {
+                    const model = await LeBonCoinScrapper.toModel(page);
+                    rep.push(model)
+                } catch (e) {
+                    rep.push({error: e})
+                } finally {
+                    if (!page.isClosed())
+                        page.close()
+                }
             }
         }
         return rep
@@ -230,7 +248,8 @@ class LeBonCoinScrapper {
             seller_promise,
             phone_promise]);
 
-        return new Model({
+        const annonce = new models.Annonce({
+            source: page.target().url(),
             images: fields[0],
             title: fields[1],
             price: fields[2],
@@ -238,9 +257,12 @@ class LeBonCoinScrapper {
             criteria: fields[4],
             seller: fields[5],
             phone: fields[6]
-        })
+        });
+
+        annonce.save();
+
+        return annonce;
     }
 }
 
-exports
-    .LeBonCoinScrapper = LeBonCoinScrapper;
+module.exports.LeBonCoinScrapper = LeBonCoinScrapper;
