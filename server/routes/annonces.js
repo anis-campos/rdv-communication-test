@@ -3,7 +3,7 @@ const {Router} = require('express');
 
 const router = Router();
 
-router.post('/', async (req, res) => {
+router.post('/annonces', async (req, res) => {
 
     const browser = await req.context.puppeteer.launch({headless: false});
     const leBonCoinScrapper = new LeBonCoinScrapper(browser);
@@ -13,14 +13,14 @@ router.post('/', async (req, res) => {
     return res.send({number: data.length});
 });
 
-router.get('/', async (req, res) => {
+router.get('/annonces', async (req, res) => {
     const users = await req.context.models.Annonce.find();
     return res.send(users);
 });
 
-router.get('/:userId', async (req, res) => {
+router.get('/annonces/:id', async (req, res) => {
     const user = await req.context.models.Annonce.findById(
-        req.params.userId,
+        req.params.id,
     );
     return res.send(user);
 });

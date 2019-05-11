@@ -16,9 +16,9 @@ app.use(async (req, res, next) => {
     next();
 });
 
-app.use(routes.annonce);
+app.use('/api',routes.annonce);
 
-const eraseDatabaseOnSync = true;
+const eraseDatabaseOnSync = false;
 
 
 connect().then(async () => {
