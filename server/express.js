@@ -1,10 +1,34 @@
 const express = require('express');
+const {models, connect} = require('./models');
+const routes = require('./routes');
+const puppeteer = require("puppeteer");
+
 const app = express();
 const port = process.env.PORT || 5000;
 
-// console.log that your server is up and running
-app.listen(port, () => console.log(`Listening on port ${port}`));
 
-app.get('/express_backend', (req, res) => {
-    res.send({ express: 'YOUR EXPRESS BACKEND IS CONNECTED TO REACT' });
+
+app.use(async (req, res, next) => {
+    req.context = {
+        models,
+        puppeteer
+    };
+    next();
 });
+
+app.use(routes.annonce);
+
+const eraseDatabaseOnSync = true;
+
+
+connect().then(async () => {
+
+    if (eraseDatabaseOnSync) {
+        await Promise.all([
+            models.Annonce.deleteMany({}),
+        ]);
+    }
+
+    app.listen(port, () => console.log(`Listening on port ${port}`));
+});
+
