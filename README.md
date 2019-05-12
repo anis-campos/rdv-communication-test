@@ -1,6 +1,7 @@
 # rdv-communication-test
 Test React / Node / Scrapping
 
+Scrapping LeBonCoin.fr to find tesla cars
 
 # API
 API is reachable at `localhost:3000/api`
@@ -11,11 +12,6 @@ API is reachable at `localhost:3000/api`
     - `startingPage:[Number]`: (Optional) Set starting page of scrapping. Default is `1`
     - `numberOfPage:[Number]`: (Optional) Set number of pages to scrap. Default is `1`
     - `numberOfElements:[Number]`(Optional) Set number of elements to scrap on the page. Default is `10`
-
-
-# Mongo Credential
-- user: rdv-com
-- password: SoCB36i2YqBomWrV
 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
