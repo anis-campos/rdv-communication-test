@@ -6,7 +6,6 @@ import Collapse from "@material-ui/core/es/Collapse/Collapse";
 import IconButton from "@material-ui/core/es/IconButton/IconButton";
 import CardActions from "@material-ui/core/CardActions";
 import CardMedia from "@material-ui/core/CardMedia";
-import Avatar from "@material-ui/core/Avatar";
 import CardHeader from "@material-ui/core/es/CardHeader/CardHeader";
 import Card from "@material-ui/core/es/Card";
 import {withStyles} from "@material-ui/core";
@@ -15,7 +14,7 @@ import red from "@material-ui/core/es/colors/red";
 import FavoriteIcon from '@material-ui/icons/Favorite';
 import ShareIcon from '@material-ui/icons/Share';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import MoreVertIcon from '@material-ui/icons/MoreVert';
+import LinkIcon from '@material-ui/icons/Link';
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
 
@@ -71,16 +70,21 @@ class AnnonceDetail extends Component {
         this.setState(state => ({expanded: !state.expanded}));
     };
 
+    handleLinkClick = (url) => {
+        window.open(url, "_blank")
+    };
+
     render() {
-        const {title, images, criteria: criterias, price, date, seller, phone} = this.state;
+        const {title, images, criteria: criterias, price, date, seller, phone, source} = this.state;
         const {classes} = this.props;
         return (
             <Card className={classes.card} width={1}>
                 <CardHeader
                     action={
-                        <IconButton>
-                            <MoreVertIcon/>
-                        </IconButton>
+                        <Button variant="flat" color="secondary" onClick={this.handleLinkClick.bind(this, source)}>
+                            <LinkIcon />
+                            See Original
+                        </Button>
                     }
                     title={title}
                     subheader={
