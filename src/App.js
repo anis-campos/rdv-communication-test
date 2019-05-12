@@ -14,11 +14,10 @@ import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
 import Divider from "@material-ui/core/Divider";
 import Icon from "@material-ui/core/Icon";
-import {AnnonceDetail} from "./AnnonceDetail";
+import AnnonceDetail from "./AnnonceDetail";
 import {Route} from 'react-router-dom';
 
-
-const styles = theme => ({
+const styles = () => ({
         progress: {
             color: "white"
         },
@@ -60,8 +59,9 @@ class App extends Component {
         list: []
     };
 
+
     componentDidMount() {
-        Notification.requestPermission()
+        Notification.requestPermission();
         this.loadData()
     }
 
@@ -70,7 +70,6 @@ class App extends Component {
         if (this.state.refresh) return;
         this.setState({refresh: true});
 
-        new Notification("Starting Scrapping");
         const response = await fetch("/api/annonces", {
             method: "POST"
         });
@@ -82,8 +81,6 @@ class App extends Component {
             if (response.status !== 200) {
                 throw Error(body.message)
             }
-
-            new Notification(`Scrapping over: ${body.number} annonces found`)
 
         } else {
             throw Error("No Answers")
@@ -107,8 +104,8 @@ class App extends Component {
     };
 
     onClickItem = (item) => {
+        debugger;
         this.props.history.push('/' + item._id);
-        this.setState({current: item._id})
     };
 
     render = () => {
@@ -155,14 +152,14 @@ class App extends Component {
                                             (
                                                 <div key={item._id}>
                                                     <ListItem button onClick={this.onClickItem.bind(this, item)}
-                                                              >
+                                                    >
                                                         <img className={classes.image} src={item.images[0]}
-                                                             alt={item.title}  />
-                                                        <ListItemText primary={item.title} secondary={item.date} />
+                                                             alt={item.title}/>
+                                                        <ListItemText primary={item.title} secondary={item.date}/>
 
                                                     </ListItem>
 
-                                                    {index < list.length - 1 && < Divider />}
+                                                    {index < list.length - 1 && < Divider/>}
                                                 </div>))
                                     }
                                 </List>
@@ -180,5 +177,6 @@ class App extends Component {
         );
     };
 }
+
 
 export default withStyles(styles)(App);
