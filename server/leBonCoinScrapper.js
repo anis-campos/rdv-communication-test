@@ -147,8 +147,8 @@ class LeBonCoinScrapper {
                 const button = await page.$("[data-qa-id=adview_contact_container] button[data-qa-id=adview_button_phone_contact]");
                 if (button) {
                     await button.click();
-                    await page.waitForSelector('a._2sNbI', {visible: true});
-                    const val = await page.$eval('a._2sNbI', el => el.textContent);
+                    await page.waitForSelector('a._2sNbI.ObuDQ.GXQkc._2BP2c', {visible: true});
+                    const val = await page.$eval('a._2sNbI.ObuDQ.GXQkc._2BP2c', el => el.textContent);
                     console.log('phone:', val);
                     resolve(val)
 
