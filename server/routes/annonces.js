@@ -1,15 +1,22 @@
 const {LeBonCoinScrapper} = require("../leBonCoinScrapper");
 const {Router} = require('express');
+const bodyParser = require('body-parser');
 
 const router = Router();
+const jsonParser = bodyParser.json();
 
-router.post('/annonces', async (req, res) => {
+router.post('/annonces', jsonParser, async (req, res) => {
     let browser;
     try {
         browser = await req.context.puppeteer.launch({headless: false});
+        const {
+            startingPage = 1,
+            numberOfPage = 1,
+            numberOfElements = 10
+        } = req.body;
         const leBonCoinScrapper = new LeBonCoinScrapper(browser);
-        await leBonCoinScrapper.load();
-        const data = await leBonCoinScrapper.scrap(1, 16);
+        await leBonCoinScrapper.load(startingPage);
+        const data = await leBonCoinScrapper.scrap(numberOfPage, numberOfElements);
         return res.send({number: data.length});
     } catch (e) {
         next(e)

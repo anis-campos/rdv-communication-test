@@ -17,9 +17,18 @@ import Icon from "@material-ui/core/Icon";
 import AnnonceDetail from "./AnnonceDetail";
 import {Route} from 'react-router-dom';
 
-const styles = () => ({
-        progress: {
-            color: "white"
+const styles = (theme) => ({
+        buttonProgress: {
+            color: "white",
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            marginTop: -15,
+            marginLeft: -12,
+        },
+        wrapper: {
+            margin: theme.spacing.unit,
+            position: 'relative',
         },
         root: {
             flexGrow: 1,
@@ -55,23 +64,26 @@ const styles = () => ({
 class App extends Component {
     state = {
         data: null,
-        refresh: false,
+        isScrapping: false,
         list: []
     };
 
-
     componentDidMount() {
-        Notification.requestPermission();
         this.loadData()
     }
 
 
     scrapData = async () => {
-        if (this.state.refresh) return;
-        this.setState({refresh: true});
+        if (this.state.isScrapping) return;
+        this.setState({isScrapping: true});
 
         const response = await fetch("/api/annonces", {
-            method: "POST"
+            method: "POST",
+            body: JSON.stringify({
+                startingPage: 1,
+                numberOfPage: 1,
+                numberOfElements: 10
+            })
         });
 
         if (response) {
@@ -85,7 +97,7 @@ class App extends Component {
         } else {
             throw Error("No Answers")
         }
-        this.setState({refresh: false});
+        this.setState({isScrapping: false});
 
     };
 
@@ -104,12 +116,11 @@ class App extends Component {
     };
 
     onClickItem = (item) => {
-        debugger;
         this.props.history.push('/' + item._id);
     };
 
     render = () => {
-        const {refresh, list} = this.state;
+        const {isScrapping, list} = this.state;
         const {classes} = this.props;
         return (
             <div className="root">
@@ -119,15 +130,17 @@ class App extends Component {
                         <Typography variant="h4" color="inherit" className={classes.grow}>
                             Le Bon Coin Scrapper
                         </Typography>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            className={classes.button}
-                            disabled={refresh}
-                            onClick={this.scrapData}>
-                            Start Scrapping
-                        </Button>
-                        {refresh && <CircularProgress className={classes.progress}/>}
+                        <div className={classes.wrapper}>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                className={classes.button}
+                                disabled={isScrapping}
+                                onClick={this.scrapData}>
+                                Start Scrapping
+                            </Button>
+                            {isScrapping && <CircularProgress size={30} className={classes.buttonProgress}/>}
+                        </div>
                     </Toolbar>
                 </AppBar>
 
