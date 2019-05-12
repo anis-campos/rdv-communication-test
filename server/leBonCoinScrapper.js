@@ -55,7 +55,7 @@ class LeBonCoinScrapper {
 
     async scrap(numberOfPages = this.numberOfPages, size = pageSize) {
 
-        let lastPageIndex = this._currentPage + numberOfPages;
+        let lastPageIndex = this._currentPage + numberOfPages - 1;
         lastPageIndex = lastPageIndex > this.numberOfPages ? numberOfPages : lastPageIndex;
 
         let listItems = [];
@@ -140,6 +140,8 @@ class LeBonCoinScrapper {
     static
     async toModel(page) {
 
+        const url = page.target().url();
+
         const phone_promise = new Promise(async resolve => {
             try {
                 const button = await page.$("[data-qa-id=adview_contact_container] button[data-qa-id=adview_button_phone_contact]");
@@ -156,7 +158,7 @@ class LeBonCoinScrapper {
 
                 }
             } catch (e) {
-                console.error("phone error", e);
+                console.error(`[${url}] - phone error`, e);
                 resolve(null)
             }
         });
@@ -196,12 +198,12 @@ class LeBonCoinScrapper {
         const seller_promise = new Promise(async resolve => {
 
             try {
-                let name = (await page.$('._2rGU1')) || (await page.$('._2j7r2'));
+                let name = (await page.$(".T5Lvz")) || (await page.$('._2rGU1')) || (await page.$('._2j7r2'));
                 const seller = await page.evaluate(el => el.textContent, name);
                 console.log('seller:', seller);
                 resolve(seller)
             } catch (e) {
-                console.error("seller error", e);
+                console.error(`[${url}] - seller error:`, e);
                 resolve(null)
             }
         });
@@ -248,20 +250,21 @@ class LeBonCoinScrapper {
             seller_promise,
             phone_promise]);
 
-        const annonce = new models.Annonce({
-            source: page.target().url(),
-            images: fields[0],
-            title: fields[1],
-            price: fields[2],
-            date: fields[3],
-            criteria: fields[4],
-            seller: fields[5],
-            phone: fields[6]
-        });
 
-        annonce.save();
+        const query = {source: page.target().url()},
+            update = {
+                source: url,
+                images: fields[0],
+                title: fields[1],
+                price: fields[2],
+                date: fields[3],
+                criteria: fields[4],
+                seller: fields[5],
+                phone: fields[6]
+            },
+            options = {upsert: true, new: true, setDefaultsOnInsert: true};
 
-        return annonce;
+        return await models.Annonce.findOneAndUpdate(query, update, options);
     }
 }
 
