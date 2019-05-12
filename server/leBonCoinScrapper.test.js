@@ -1,4 +1,4 @@
-const {Model} = require('./model');
+const {models, connect} = require('./models');
 const puppeteer = require("puppeteer");
 const {LeBonCoinScrapper} = require('./leBonCoinScrapper');
 /**
@@ -7,10 +7,13 @@ const {LeBonCoinScrapper} = require('./leBonCoinScrapper');
  */
 let browser = null;
 
-beforeAll(async () => browser = await puppeteer.launch({headless: false}), 60000);
+beforeAll(async () => {
+    await connect();
+    browser = await puppeteer.launch({headless: false});
+}, 60000);
 
 
-afterAll(() => browser.close());
+afterAll(() => browser && browser.close());
 
 
 test("can scrap a page and create model", async () => {
@@ -19,7 +22,7 @@ test("can scrap a page and create model", async () => {
     await page.goto("https://www.leboncoin.fr/voitures/1582418174.htm/", {waitUntil: 'networkidle2'});
     const data = await LeBonCoinScrapper.toModel(page);
     console.log(data);
-    expect(data).toEqual(expect.any(Model));
+    expect(data).toEqual(expect.any(models.Annonce));
     page.close()
 }, 60000);
 

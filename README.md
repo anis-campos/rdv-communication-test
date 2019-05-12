@@ -1,6 +1,18 @@
 # rdv-communication-test
 Test React / Node / Scrapping
 
+
+# API
+API is reachable at `localhost:3000/api`
+
+- `get /annonces` : Get all annonces
+- `get /annonces/:id`: Get a specific annonces with `:id` being the id of the document on mongo database
+- `post /annonces`: Start the scrapping, parameters:
+    - `startingPage:[Number]`: (Optional) Set starting page of scrapping. Default is `1`
+    - `numberOfPage:[Number]`: (Optional) Set number of pages to scrap. Default is `1`
+    - `numberOfElements:[Number]`(Optional) Set number of elements to scrap on the page. Default is `10`
+
+
 # Mongo Credential
 - user: rdv-com
 - password: SoCB36i2YqBomWrV
@@ -22,6 +34,4 @@ You will also see any lint errors in the console
 
 ### `npm test`
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
+Launches back-end test
